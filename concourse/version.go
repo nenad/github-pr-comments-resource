@@ -1,38 +1,25 @@
 package concourse
 
 import (
-	"encoding/json"
 	"strconv"
 )
 
 type (
+	// Version represents a single version of a resource.
 	Version struct {
-		CommentID uint `json:"comment_id"`
-	}
-
-	strVersion struct {
+		// CommentID is a unique identifier to a GitHub comment on a pull request.
 		CommentID string `json:"comment_id"`
 	}
 )
 
-// MarshalJSON marshals the uint64 to a string.
-func (v *Version) MarshalJSON() ([]byte, error) {
-	ver := strVersion{CommentID: strconv.FormatUint(uint64(v.CommentID), 10)}
-
-	return json.Marshal(&ver)
+// VersionFromNumber creates a Version from a uint instead of a string.
+func VersionFromNumber(commentID uint) Version {
+	return Version{CommentID: strconv.FormatUint(uint64(commentID), 10)}
 }
 
-// UnmarshalJSON never fails. On failure it sets the CommentID to 0.
-func (v *Version) UnmarshalJSON(b []byte) error {
-	var ver strVersion
-	err := json.Unmarshal(b, &ver)
-	if err != nil {
-		v.CommentID = 0
-		return nil
-	}
+// IDNumber returns the version identifier in a numeric value.
+func (v *Version) IDNumber() uint {
+	num, _ := strconv.ParseUint(v.CommentID, 10, 64)
 
-	// The error is ignored because the signal of failure is CommentID = 0.
-	id, _ := strconv.Atoi(ver.CommentID)
-	v.CommentID = uint(id)
-	return nil
+	return uint(num)
 }
