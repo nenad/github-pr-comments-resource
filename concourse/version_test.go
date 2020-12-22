@@ -1,31 +1,37 @@
 package concourse
 
 import (
-	"bytes"
 	"math"
 	"reflect"
 	"testing"
 )
 
-func TestVersion_MarshalJSON(t *testing.T) {
-
+func TestVersion_IDNumber(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
-		commentID uint
-		want      []byte
-		wantErr   bool
+		commentID string
+		want      uint
 	}{
 		{
-			name:      "test 0",
-			commentID: 0,
-			want:      bytes.NewBufferString(`{"comment_id":"0"}`).Bytes(),
-			wantErr:   false,
+			name:      "empty string should return 0",
+			commentID: "",
+			want:      0,
 		},
 		{
-			name:      "test max uint64",
-			commentID: math.MaxUint64,
-			want:      bytes.NewBufferString(`{"comment_id":"18446744073709551615"}`).Bytes(),
-			wantErr:   false,
+			name:      "invalid string should return 0",
+			commentID: "hello world",
+			want:      0,
+		},
+		{
+			name:      "valid string should result in 123456",
+			commentID: "123456",
+			want:      123456,
+		},
+		{
+			name:      "maximum int64 should be correctly converted",
+			commentID: "18446744073709551615",
+			want:      math.MaxUint64,
 		},
 	}
 	for _, tt := range tests {
@@ -33,52 +39,45 @@ func TestVersion_MarshalJSON(t *testing.T) {
 			v := &Version{
 				CommentID: tt.commentID,
 			}
-			got, err := v.MarshalJSON()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("MarshalJSON() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("MarshalJSON() got = %s, want %s", got, tt.want)
+			if got := v.IDNumber(); got != tt.want {
+				t.Errorf("IDNumber() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestVersion_UnmarshalJSON(t *testing.T) {
+func TestVersionFromNumber(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		commentID uint
-		data      []byte
-		wantErr   bool
+		want      Version
 	}{
 		{
-			name:      "no data",
+			name:      "empty string should return 0",
+			want:      Version{CommentID: "0"},
 			commentID: 0,
-			data:      nil,
-			wantErr:   false,
 		},
 		{
-			name:      "valid comment ID",
+			name:      "invalid string should return 0",
+			want:      Version{CommentID: "0"},
+			commentID: 0,
+		},
+		{
+			name:      "valid string should result in 123456",
+			want:      Version{CommentID: "123456"},
 			commentID: 123456,
-			data:      bytes.NewBufferString(`{"comment_id":"123456"}"`).Bytes(),
-			wantErr:   false,
 		},
 		{
-			name:      "maximum comment ID",
+			name:      "maximum int64 should be correctly converted",
+			want:      Version{CommentID: "18446744073709551615"},
 			commentID: math.MaxUint64,
-			data:      bytes.NewBufferString(`{"comment_id":"18446744073709551615"}"`).Bytes(),
-			wantErr:   false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := &Version{
-				CommentID: tt.commentID,
-			}
-			if err := v.UnmarshalJSON(tt.data); (err != nil) != tt.wantErr {
-				t.Errorf("UnmarshalJSON() error = %v, wantErr %v", err, tt.wantErr)
+			if got := VersionFromNumber(tt.commentID); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("VersionFromNumber() = %v, want %v", got, tt.want)
 			}
 		})
 	}

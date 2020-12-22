@@ -1,25 +1,33 @@
-package main
+package concourse
 
 import (
 	"context"
 	"fmt"
 	"sort"
 
-	"github.com/nenad/github-pr-comments-resource/concourse"
 	"github.com/nenad/github-pr-comments-resource/github"
 )
 
-func runCheck(ctx context.Context, request concourse.CheckRequest) ([]concourse.Version, error) {
-	owner, repo, err := request.Source.OwnerAndName()
-	if err != nil {
-		return nil, fmt.Errorf("could not extract repository information: %w", err)
+type (
+	CommentSelector interface {
+		SelectComments(context.Context, ...github.Filter) ([]github.Comment, error)
 	}
 
-	c := github.NewClient(ctx, request.Source.AccessToken, owner, repo)
+	Check struct {
+		gh CommentSelector
+	}
+)
 
+func NewCheck(gh CommentSelector) *Check {
+	return &Check{
+		gh: gh,
+	}
+}
+
+func (c *Check) Run(ctx context.Context, request Request) ([]Version, error) {
 	var filters []github.Filter
-	if request.Version.CommentID != 0 {
-		filters = append(filters, github.FilterSince(request.Version.CommentID))
+	if request.Version.IDNumber() != 0 {
+		filters = append(filters, github.FilterSince(request.Version.IDNumber()))
 	}
 
 	if request.Source.Comments != "" {
@@ -34,19 +42,16 @@ func runCheck(ctx context.Context, request concourse.CheckRequest) ([]concourse.
 		filters = append(filters, github.FilterLatestPerPR())
 	}
 
-	comments, err := c.SelectComments(ctx, filters...)
+	comments, err := c.gh.SelectComments(ctx, filters...)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch comments: %w", err)
 	}
 
-	versions := make([]concourse.Version, len(comments))
+	versions := make([]Version, len(comments))
 	for idx, com := range comments {
-		versions[idx] = concourse.Version{
-			CommentID: com.ID,
-		}
+		versions[idx] = VersionFromNumber(com.ID)
 	}
 
-	// Should sorting be done in client functions?
 	sort.SliceStable(versions, func(i, j int) bool {
 		return versions[i].CommentID < versions[j].CommentID
 	})
