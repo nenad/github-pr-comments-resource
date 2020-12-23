@@ -1,0 +1,3 @@
+#!/bin/sh
+
+/opt/resource/github-pr-comment in "$1"
