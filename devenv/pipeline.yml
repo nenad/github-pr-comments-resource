@@ -1,0 +1,31 @@
+resource_types:
+  - name: github-pr-comments
+    type: registry-image
+    source:
+      repository: ghcr.io/nenad/github-pr-comments-resource
+      tag: 0.0.1
+
+resources:
+  - name: pr-comments
+    type: github-pr-comments
+    source:
+      repository: nenad/github-pr-comments-resource
+      access_token: ((access_token))
+      latest_per_pr: true
+
+jobs:
+  - name: echo-pr-metadata
+    plan:
+      - get: pr-comments
+        version: every
+      - task: say-hello
+        config:
+          platform: linux
+          inputs:
+            - name: pr-comments
+          image_resource:
+            type: registry-image
+            source: { repository: imega/jq }
+          run:
+            path: jq
+            args: [".",  "pr-comments/metadata.json" ]

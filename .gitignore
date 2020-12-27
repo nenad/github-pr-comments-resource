@@ -1,2 +1,5 @@
 vendor
 data
+devenv/web
+devenv/worker
+devenv/vars.yml
