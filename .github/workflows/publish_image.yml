@@ -2,8 +2,6 @@ name: Build/Publish image
 
 on:
   push:
-    branches:
-      - '**'
     tags:
       - 'v*'
   pull_request:
