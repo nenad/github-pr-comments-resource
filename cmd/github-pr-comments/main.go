@@ -16,28 +16,24 @@ import (
 func main() {
 	flag.Parse()
 	if flag.NArg() < 1 {
-		quitf("Missing command, should be one of in, out or check")
+		quitf("missing command, should be one of in, out or check")
+	}
+
+
+	req, err := concourse.NewRequest(os.Stdin)
+	if err != nil {
+		quitf("could not create a new request: %s", err)
 	}
 
 	ctx := context.Background()
+	client := github.NewClient(ctx, req.Source.AccessToken, req.RepositoryOwner(), req.RepositoryName())
 
-	command := flag.Arg(0)
 	var output interface{}
-
-	req := concourse.Request{}
-	if err := json.NewDecoder(os.Stdin).Decode(&req); err != nil {
-		quitf("could not decode request: %s", err)
-	}
-	owner, name, err := req.Source.OwnerAndName()
-	if err != nil {
-		quitf("could not extract repository info: %s", err)
-	}
-	client := github.NewClient(ctx, req.Source.AccessToken, owner, name)
-
+	command := flag.Arg(0)
 	switch command {
 	case "in":
 		if flag.NArg() < 2 {
-			quitf("Missing directory argument")
+			quitf("missing directory argument")
 		}
 
 		// TODO Configurable file name?
