@@ -9,7 +9,7 @@ func FilterSince(commentID uint) Filter {
 	return func(comments []Comment) []Comment {
 		var newComments []Comment
 		for _, c := range comments {
-			if c.ID < commentID {
+			if commentID >= c.ID {
 				continue
 			}
 			newComments = append(newComments, c)
